@@ -1,23 +1,37 @@
 plugins {
     id 'groovy'
-    //id 'maven-publish'
+    id 'maven-publish'
     //id 'java-gradle-plugin'
 }
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
 
+        /*resources {
+            srcDir 'src/main/resources'
+        }*/
+    }
+}
 
-    sourceSets {
-        main {
-            groovy {
-                srcDir 'src/main/groovy'
+afterEvaluate {
+    publishing {
+        def versionName = "1.0"
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                // Applies the component for the release build variant.
+                //from components.release
+
+                // You can then customize attributes of the publication as shown below.
+                groupId = 'com.ccn'
+                artifactId = 'plugin'
+                version = versionName
             }
-
-            /*resources {
-                srcDir 'src/main/resources'
-            }*/
         }
     }
-
-
+}
 
 /*gradlePlugin {
     plugins {
