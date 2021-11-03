@@ -1,19 +1,23 @@
 plugins {
     id 'groovy'
+    //id 'maven-publish'
     //id 'java-gradle-plugin'
 }
 
-sourceSets {
-    main {
-        groovy {
-            srcDir 'src/main/groovy'
-        }
 
-        /*resources {
-            srcDir 'src/main/resources'
-        }*/
+    sourceSets {
+        main {
+            groovy {
+                srcDir 'src/main/groovy'
+            }
+
+            /*resources {
+                srcDir 'src/main/resources'
+            }*/
+        }
     }
-}
+
+
 
 /*gradlePlugin {
     plugins {
@@ -26,4 +30,9 @@ sourceSets {
     }
 }*/
 
+
+repositories {
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
 
