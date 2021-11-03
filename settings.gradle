@@ -1,2 +1,3 @@
+rootProject.name = "PDAPlugin"
 include ':app'
-include ':pluginLibrary'
+

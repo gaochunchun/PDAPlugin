@@ -1,6 +1,6 @@
 plugins {
     id 'groovy'
-    id 'java-gradle-plugin'
+    //id 'java-gradle-plugin'
 }
 
 sourceSets {
@@ -9,9 +9,9 @@ sourceSets {
             srcDir 'src/main/groovy'
         }
 
-        resources {
+        /*resources {
             srcDir 'src/main/resources'
-        }
+        }*/
     }
 }
 

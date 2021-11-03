@@ -13,7 +13,7 @@ class SyncOrPushFile implements Plugin<Project> {
         println '--------------------------------->' + System.getProperty("user.dir")
         //println '--------------------------------->' +new File(System.getProperty("user.dir")).name
         //println '--------------------------------->' +new File(System.getProperty("user.dir")).parent
-        println '--------------------------------->' + new SystemProperties().properties
+        //println '--------------------------------->' + new SystemProperties().properties
 
 
         //def debugBuildConfigFieldName = android.properties.get('buildTypes').getByName("debug").getBuildConfigFields().APP_TYPE.getValue().replaceAll("\"", "")
