@@ -1,15 +1,12 @@
-plugins {
-    id 'com.android.application'
-    id 'com.ccn.plugin'
-}
-
+apply plugin: 'com.ccn.plugin'
+apply plugin: 'com.android.application'
 android {
-    compileSdk 31
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "com.ccn.plugintest"
-        minSdk 21
-        targetSdk 31
+        minSdkVersion 16
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
@@ -21,8 +18,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
