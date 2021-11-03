@@ -1,2 +1,2 @@
 //apply plugin: 'com.android.application'
-//apply plugin: 'com.ccn.plugin'
+apply plugin: 'com.ccn.plugin'
