@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="1" GROUP="NF1" HEIGHT="1" ID="BarCode">
+        <NAME>数码</NAME>
+        <FIELDNAME>BarCode</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>BarCode</VVALUE>
+                <VFAIL MTYPE="INFO">数码不能为空！</VFAIL>
+            </V>
+
+            <V VID="02" VTYPE="REGEX">
+                <VVALUE>:BarCode#^[0-9]*$</VVALUE>
+                <VFAIL MTYPE="INFO">数码只能包含数字！</VFAIL>
+            </V>
+
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0) FROM T_PDM_TRANSFERSCODE WHERE PRO_BARCODE=':BarCode'</VVALUE>
+                <VFAIL MTYPE="ERROR">该数码未进行调拨！</VFAIL>
+            </V>
+
+            <V VID="04" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0) FROM T_PDM_TRANSFERSCODE WHERE PRO_BARCODE=':BarCode' AND DoID='@T001_DoID'</VVALUE>
+                <VFAIL MTYPE="ERROR">只能删除当前调拨单扫描的数码！</VFAIL>
+            </V>
+
+            <V VID="05" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0) FROM T_PDM_TRANSFERSCODE WHERE PRO_BARCODE=':BarCode' AND DoID='@T001_DoID' AND OUTPRO_CCNID='@T001_PROID'
+                </VVALUE>
+                <VFAIL MTYPE="ERROR">只能删除当前产品扫描的数码！</VFAIL>
+            </V>
+
+        </VALIDATE>
+
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <ACTION ATYPE="SETVALUE" TARGET="Old_BarCode">:BarCode</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="REALSCAN">INIT</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="BarCode">CLEAR</ACTION>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="BarCode">CLEAR</ACTION>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="2" GROUP="NF1" HEIGHT="1" ID="Old_BarCode">
+        <NAME>已删数码</NAME>
+        <FIELDNAME>Old_BarCode</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="3" GROUP="NF1" HEIGHT="1" ID="DOID">
+        <NAME>调拨单号</NAME>
+        <FIELDNAME>DOID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="DOID">DISABLE</ACTION>
+
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT '@T001_DoID'
+            </INIT>
+        </INITDATA>
+
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="4" GROUP="NF1" HEIGHT="1" ID="PROID">
+        <NAME>产品编号</NAME>
+        <FIELDNAME>PROID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="PROID">DISABLE</ACTION>
+            <INIT IID="01" OTYPE="DATABASE">SELECT OUTPRO_ZID FROM T_PDM_TRANSFERSSTORE WHERE DoID='@T001_DoID' AND OUTPRO_CCNID='@T001_PROID' LIMIT
+                1
+            </INIT>
+        </INITDATA>
+
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="5" GROUP="NF1" HEIGHT="1" ID="PRONAME">
+        <NAME>产品名称</NAME>
+        <FIELDNAME>PRONAME</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <INIT IID="01" OTYPE="DATABASE">SELECT OUTPRO_NAME From T_PDM_TRANSFERSSTORE WHERE DoID='@T001_DoID' AND OUTPRO_CCNID='@T001_PROID'</INIT>
+        </INITDATA>
+
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="6" GROUP="NF1" HEIGHT="2" ID="REALSCAN">
+        <NAME>扫描计数</NAME>
+        <FIELDNAME>REALSCAN</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT IFNULL(SUM(ITEM_COUNT),0) AS PROSUM
+                FROM T_PDM_TRANSFERSCODE WHERE DoID ='@T001_DoID' AND OUTPRO_CCNID='@T001_PROID'
+            </ACTION>
+
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT IFNULL(SUM(ITEM_COUNT),0) AS DOSUM
+                FROM T_PDM_TRANSFERSCODE WHERE DoID ='@T001_DoID'
+            </ACTION>
+
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT
+                $PROSUM||'单品/'||$DOSUM||'单品'
+            </INIT>
+        </INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="7" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="02" VTYPE="ISNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="PACKDELETE">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="PACKDELETE">
+        <NAME>按数码删除</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V VID="02" VTYPE="DATABASE">
+            <VVALUE>select LENGTH('@T001_DoID')>0</VVALUE>
+            <VFAIL MTYPE="INFO">调拨单号为空！</VFAIL>
+        </V>
+        <V_OK>
+
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="PACKDELETE">CLOSE</ACTION>
+        </V_FALSE>
+    </CONTROL>
+
+    <SAVEDATA>
+        <FSAVE ID="F1">
+            DELETE FROM T_PDM_TRANSFERSCODE where PRO_BARCODE =':BarCode'
+        </FSAVE>
+        <FSAVE ID="F2">
+            UPDATE T_PDM_TRANSFERSSTORE SET DoIDStatus='1' WHERE DoID='@T001_DoID' AND OUTPRO_CCNID='@T001_PROID'
+        </FSAVE>
+    </SAVEDATA>
+
+</ns0:cng_form>

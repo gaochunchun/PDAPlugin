@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="1" GROUP="NF1" HEIGHT="1" ID="USER_ID">
+        <NAME>账号</NAME>
+        <FIELDNAME>USER_ID</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+
+        <INITDATA>
+
+            <INIT IID="01" OTYPE="INIT_NOT_DATABASE">SELECT '#MAKER' as USERID</INIT>
+
+        </INITDATA>
+
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>USER_ID</VVALUE>
+                <VFAIL MTYPE="INFO">账号不能为空！</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+            <NEXTCONTROL>PASSWORD</NEXTCONTROL>
+        </V_OK>
+
+        <V_FALSE>
+            <NEXTCONTROL>USER_ID</NEXTCONTROL>
+        </V_FALSE>
+
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="2" GROUP="NF1" HEIGHT="1" ID="PASSWORD">
+        <NAME>密码</NAME>
+        <FIELDNAME>PASSWORD</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>PASSWORD</VVALUE>
+                <VFAIL MTYPE="INFO">密码不能为空！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="ISNOTNULL">
+                <VVALUE>USER_ID</VVALUE>
+                <VFAIL MTYPE="INFO">账号不能为空！</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+
+            <ACTION ATYPE='ENCRYPTMD5' TARGET='PASSWORD'>PASSWORD</ACTION>
+            <ACTION ATYPE='SETDBPARAM'>
+                SELECT (SELECT CASE WHEN COUNT(*)>0 THEN '1' ELSE '0' END FROM SYSSET.T_DICT_USER WHERE USERID=':USER_ID' AND
+                lower(PASSWORD)=lower('$PASSWORD'))AS ISCHECK;
+            </ACTION>
+            <ACTION ATYPE='SETDBPARAM'>
+                SELECT CASE WHEN $ISCHECK=1 THEN 1 ELSE ':PASSWORD'='@Login_User' AND ':USER_ID'='@Login_Password' END AS ISCHECK
+            </ACTION>
+            <ACTION ATYPE="SETSHAREPARAM">ISPASS=$ISCHECK</ACTION>
+            <CONDITION ID="01" VAL="('@ISPASS'='0') AND NOT('@ISLOGIN' ='1') ">
+                <ACTION ATYPE="DATASET" TARGET="USER_ID">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PASSWORD">CLEAR</ACTION>
+                <ACTION ATYPE="UI" TARGET="USER_ID">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="PASSWORD">ENABLE</ACTION>
+                <ACTION ATYPE="SHOWINFO">密码校验失败！</ACTION>
+                <NEXTCONTROL>USER_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="'@ISPASS'='1'">
+                <ACTION ATYPE="SHOWINFO">密码校验成功！</ACTION>
+                <ACTION ATYPE="SETSHAREPARAM">ISLOGIN=1</ACTION>
+                <ACTION ATYPE="SETSHAREPARAM">LOGIN_USER=:USER_ID</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CheckForm">CLOSE</ACTION>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="03" VAL="('@ISPASS'='0') AND '@ISLOGIN' ='1' ">
+                <ACTION ATYPE="DATASET" TARGET="PASSWORD">CLEAR</ACTION>
+                <ACTION ATYPE="UI" TARGET="PASSWORD">ENABLE</ACTION>
+                <ACTION ATYPE="SHOWINFO">密码校验失败！</ACTION>
+                <NEXTCONTROL>PASSWORD</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+        </V_OK>
+
+        <V_FALSE>
+            <NEXTCONTROL>PASSWORD</NEXTCONTROL>
+        </V_FALSE>
+
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="3" GROUP="NF2" HEIGHT="1" ID="BTN_RESET">
+        <NAME>重置</NAME>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="BTN_RESET">DISABLE</ACTION>
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="02" VTYPE="ISNULL">
+                <VVALUE>USER_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要重置吗？</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+
+            <ACTION ATYPE="DATASET" TARGET="USER_ID">CLEAR</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="PASSWORD">CLEAR</ACTION>
+
+            <ACTION ATYPE="UI" TARGET="USER_ID">ENABLE</ACTION>
+            <NEXTCONTROL>USER_ID</NEXTCONTROL>
+        </V_OK>
+
+        <V_FALSE>
+            <NEXTCONTROL>BTN_RESET</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="4" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+
+            <ACTION ATYPE='SETDBPARAM'>
+                SELECT length('#MAKER')>0 as USERNAME_LENGTH
+            </ACTION>
+
+            <CONDITION ID="01" VAL="'$USERNAME_LENGTH'='1'">
+                <ACTION ATYPE="DATASET" TARGET="USER_ID">INIT</ACTION>
+                <ACTION ATYPE="UI" TARGET="USER_ID">DISABLE</ACTION>
+                <NEXTCONTROL>PASSWORD</NEXTCONTROL>
+            </CONDITION>
+
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="02" VTYPE="ISNULL">
+                <VVALUE>USER_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="CheckForm">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE>
+            <NEXTCONTROL>BTN_CLOSE</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="CheckForm">
+        <NAME>密码校验</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SETSHAREPARAM">ISPASS=0</ACTION>
+        </V_OK>
+    </CONTROL>
+
+    <SAVEDATA>
+        <FSAVE ID="F1">DELETE FROM T_TEMP</FSAVE>
+    </SAVEDATA>
+
+</ns0:cng_form>

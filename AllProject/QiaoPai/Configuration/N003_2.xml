@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--查看错误数码-->
+    <CONTROL CONTROLTYPE="READONLYVIEW" CTL_SHOWIDX="7" GROUP="NF1" HEIGHT="5" ID="PRODUCT_LIST">
+        <NAME>产品明细列表</NAME>
+        <FIELDNAME>PRODUCT_LIST</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="PRODUCT_LIST">DISABLE</ACTION>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT DISTINCT '' AS '错误数码',
+                '' AS '失败原因' From T_TEMP WHERE F1='T_TEMP'
+            </INIT>
+            <INIT IID="02" OTYPE="INIT_NOT_DATABASE">
+                SELECT F1 as '错误数码', F2 as '失败原因' FROM T_PDM_INCODE3
+            </INIT>
+        </INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="7" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+            <!--判断本地存不存在该单据信息-->
+            <ACTION ATYPE="SETDBPARAM">SELECT COUNT(0) as CNT FROM T_PDM_INCODE3 WHERE F1 IS NOT NULL</ACTION>
+            <CONDITION ID="01" VAL="NOT('$CNT'='0')">
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="'$CNT'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">当前无错误数码！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="N003_2">CLOSE</ACTION>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="N003_2">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE>
+
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="N003_2">
+        <NAME>错误数码</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK></V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+</ns0:cng_form>

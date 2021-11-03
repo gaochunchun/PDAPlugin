@@ -1,0 +1,565 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--瓶箱解除 T_PDM_CODE_SZ-->
+
+    <CONTROL CONTROLTYPE="RADIOGROUP" CTL_SHOWIDX="1" GROUP="NF2" HEIGHT="1" ID="CODETYPE">
+        <NAME>解除类型</NAME>
+        <FIELDNAME>CODETYPE</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT '0' as ItemId, '按瓶' as ItemValue
+                union
+                SELECT '1' as ItemId, '按箱' as ItemValue
+            </INIT>
+        </INITDATA>
+        <V_OK>
+            <CONDITION ID="01" VAL="':CODETYPE'='0'">
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">HIDE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">SHOW</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="':CODETYPE'='1'">
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">SHOW</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">HIDE</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="BOX_CODE">DISABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="BOX_CODE">HIDE</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">SHOW</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <!--瓶码-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="8" GROUP="NF1" HEIGHT="1" ID="CODE_ID">
+        <NAME>瓶 码</NAME>
+        <FIELDNAME>CODE_ID</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <ACTION ATYPE="DECODE">:CODE_ID</ACTION>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="INFO">瓶码不能为空!</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT LENGTH(':CODE_ID') = 10</VVALUE>
+                <VFAIL MTYPE="ERROR">瓶码只能是10位数字!</VFAIL>
+            </V>
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)=0 FROM T_PDM_CODE_SZ WHERE F3=':CODE_ID'</VVALUE>
+                <VFAIL MTYPE="INFO">该瓶码已被扫描!</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F7</ACTION>
+            <ACTION ATYPE="SAVEDATA">F6</ACTION>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1/bottle✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+
+            <!--失败-->
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <!-- <ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F3</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODETYPE">DISABLE</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <!--箱码-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="8" GROUP="NF1" HEIGHT="1" ID="BOX_CODE">
+        <NAME>箱 码</NAME>
+        <FIELDNAME>BOX_CODE</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <ACTION ATYPE="DECODE">:BOX_CODE</ACTION>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>BOX_CODE</VVALUE>
+                <VFAIL MTYPE="INFO">箱码不能为空!</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT LENGTH(':BOX_CODE') = 20</VVALUE>
+                <VFAIL MTYPE="ERROR">箱码只能是20位数字!</VFAIL>
+            </V>
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)=0 FROM T_PDM_CODE_SZ WHERE F3=':BOX_CODE'</VVALUE>
+                <VFAIL MTYPE="INFO">该箱码已被扫描!</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F7</ACTION>
+            <ACTION ATYPE="SAVEDATA">F6</ACTION>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:BOX_CODE"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+
+            <!--失败-->
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="BOX_CODE">CLEAR</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <!-- <ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F3</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODETYPE">DISABLE</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="BOX_CODE">CLEAR</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="BOX_CODE">CLEAR</ACTION>
+            <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <!--产品明细列表-->
+    <CONTROL CONTROLTYPE="READONLYVIEW" CTL_SHOWIDX="7" GROUP="NF1" HEIGHT="6" ID="PRODUCT_LIST">
+        <NAME>产品明细列表</NAME>
+        <FIELDNAME>PRODUCT_LIST</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="PRODUCT_LIST">DISABLE</ACTION>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT DISTINCT '' AS '数码',
+                '' AS 'MID',
+                '' AS '状态'
+                From T_TEMP WHERE F1='T_TEMP'
+            </INIT>
+            <INIT IID="02" OTYPE="INIT_NOT_DATABASE">
+                SELECT F3 as '数码',OPERATOR_NO as 'MID',
+                case when F10='1' then '√' else 'x' end AS '状态'
+                FROM T_PDM_CODE_SZ
+            </INIT>
+        </INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTONBGROUP" CTL_SHOWIDX="3" GROUP="BG1" HEIGHT="1" ID="BTG">
+        <NAME>多个按钮</NAME>
+        <FIELDNAME>BTG</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="12" GROUP="BG1" HEIGHT="1" ID="BTN_DIS">
+        <NAME>解除关联</NAME>
+        <FIELDNAME>BTN_DIS</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(1)>0 FROM T_PDM_CODE_SZ</VVALUE>
+                <VFAIL MTYPE="ERROR">扫描数量为空，请先扫描数码！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(1)>0 FROM T_PDM_CODE_SZ WHERE F10='1'</VVALUE>
+                <VFAIL MTYPE="ERROR">请重新扫描数码后再进行解除操作！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(1)&lt;0 FROM T_PDM_CODE_SZ</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要解除关联吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SETPARAM">JUDGE_CHANGE=false</ACTION>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <!--T_Temp表字段含义：
+         F1 allNum所有数码数量
+         F2 code 异常数码
+         F3 codeType
+         F4 异常信息：该码为无效码，请重新扫码
+         F5 productId
+         F6 productName
+         F7 successNum 成功数量-->
+            <!-- <ACTION ATYPE="MESSAGE" TARGET="INFO">解除类型:CODETYPE</ACTION>-->
+            <!--按瓶解除-->
+            <CONDITION ID="01" VAL="':CODETYPE'='0'">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT CODE3 as X_parentCode,CODE4 as X_productId,GROUP_CONCAT(CODE1) AS CODELIST FROM T_PDM_CODE_SZ WHERE F10='1'
+                </ACTION>
+                <!--拆包装_拆单-->
+                <ACTION ATYPE="SETPARAMAR_XXX">CHAI_BAOZHUANG_DANPIN❤$X_parentCode❤$X_productId❤$CODELIST</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="change/v1/demolition✈POSTCUSTOM_SERVICE$ARRAY_XXX"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F4 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+
+            <!--按箱解除-->
+            <CONDITION ID="02" VAL="':CODETYPE'='1'">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT CODE1 as X_parentCode,CODE4 as X_productId,GROUP_CONCAT(CODE1) AS CODELIST FROM T_PDM_CODE_SZ WHERE F10='1'
+                </ACTION>
+                <!--拆包装_拆整箱-->
+                <!-- <ACTION ATYPE="SETPARAMAR_XXX">CHAI_DUO_ZHENGDUO❤XNDM20200316000001❤1439❤10048538979,111111,222222</ACTION>-->
+                <ACTION ATYPE="SETPARAMAR_XXX">CHAI_BAOZHUANG_ZHENGXIANG❤$X_parentCode❤$X_productId❤$CODELIST</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="change/v1/demolition✈POSTCUSTOM_SERVICE$ARRAY_XXX"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F4 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+
+            <CONDITION ID="03" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">${MESSAGE}</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE">CLEAR</ACTION>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <!--T_Temp表字段含义：
+            F1 allNum所有数码数量
+            F2 code 异常数码
+            F3 codeType
+            F4 异常信息：该码为无效码，请重新扫码
+            F5 productId
+            F6 productName
+            F7 successNum 成功数量-->
+            <CONDITION ID="04" VAL="NOT('${STATUS}'='0')">
+                <!--F1 allNum  F2 productId  F3 产品名称  F4 successNum-->
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F1 as X_allNum,F4 as ErrorMsg,F7 as X_successNum FROM T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SAVEDATA">F8</ACTION>
+            </CONDITION>
+
+            <!--全部成功-->
+            <CONDITION ID="05" VAL="NOT('${STATUS}'='0') AND $X_successNum >= $X_allNum">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">解除成功！</ACTION>
+                <!--修改码是否组成功的状态-->
+                <ACTION ATYPE="SAVEDATA">F10</ACTION>
+                <!--删除、存储失败数码表 -->
+                <ACTION ATYPE="SAVEDATA">F7</ACTION>
+
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="CODETYPE">0</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="BOX_CODE">HIDE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">SHOW</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="06" VAL="NOT('${STATUS}'='0') AND $X_successNum >= $X_allNum AND ':CODETYPE'='0'">
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="07" VAL="NOT('${STATUS}'='0') AND $X_successNum >= $X_allNum AND ':CODETYPE'='1'">
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+
+            <!--处理接口codeExceptions返回为[]的情况-->
+            <CONDITION ID="08" VAL="NOT('${STATUS}'='0') AND $X_allNum > $X_successNum AND '$ErrorMsg'='码中台数据返回异常！' AND ':CODETYPE'='0'">
+                <!--删除、存储失败数码表T_PDM_CODE_SZ 和 T_PDM_INCODE3 -->
+                <ACTION ATYPE="SAVEDATA">F1</ACTION>
+                <ACTION ATYPE="SAVEDATA">F7</ACTION>
+
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">$ErrorMsg</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="09" VAL="NOT('${STATUS}'='0') AND $X_allNum > $X_successNum AND '$ErrorMsg'='码中台数据返回异常！' AND ':CODETYPE'='1'">
+                <!--删除、存储失败数码表T_PDM_CODE_SZ 和 T_PDM_INCODE3 -->
+                <ACTION ATYPE="SAVEDATA">F1</ACTION>
+                <ACTION ATYPE="SAVEDATA">F7</ACTION>
+
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">$ErrorMsg</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+
+            <!--存在失败-->
+            <CONDITION ID="10" VAL="NOT('${STATUS}'='0') AND $X_allNum > $X_successNum">
+                <ACTION ATYPE="SHOWCONFIRM" TARGET="QUESTION_YES">部分数码解除失败，查看失败原因！</ACTION>
+                <!--修改码是否组成功的状态-->
+                <ACTION ATYPE="SAVEDATA">F5</ACTION>
+                <!--删除、存储失败数码表 -->
+                <ACTION ATYPE="SAVEDATA">F7</ACTION>
+                <ACTION ATYPE="SAVEDATA">F4</ACTION>
+            </CONDITION>
+
+
+            <CONDITION ID="11" VAL="'$JUDGE_CHANGE'='false' AND ':CODETYPE'='0'">
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="12" VAL="'$JUDGE_CHANGE'='false' AND ':CODETYPE'='1'">
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+
+            <CONDITION ID="13" VAL="NOT('${STATUS}'='0') AND '$JUDGE_CHANGE'='true' AND ':CODETYPE'='0'">
+                <ACTION ATYPE="UI" TARGET="N003_2">SHOW_FORM</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="14" VAL="NOT('${STATUS}'='0') AND '$JUDGE_CHANGE'='true' AND ':CODETYPE'='1'">
+                <ACTION ATYPE="UI" TARGET="N003_2">SHOW_FORM</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+            </CONDITION>
+
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="PRODUCT_CODE">CLEAR</ACTION>
+            <NEXTCONTROL>PRODUCT_CODE</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="12" GROUP="BG1" HEIGHT="1" ID="BTN_EN">
+        <NAME>删除数码</NAME>
+        <FIELDNAME>BTN_EN</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <VALIDATE>
+            <CONFIRM>CHANGE|KEY_ENTER</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+            <!--判断本地存不存在该单据信息-->
+            <ACTION ATYPE="SETDBPARAM">SELECT COUNT(0) as CNT FROM T_PDM_CODE_SZ WHERE CODE1 IS NOT NULL</ACTION>
+            <CONDITION ID="01" VAL="'$CNT'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">没有可删除的数据！</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="NOT('$CNT'='0') AND ':CODETYPE'='0'">
+                <ACTION ATYPE="UI" TARGET="N003_1">SHOW_FORM</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+
+            <CONDITION ID="03" VAL="NOT('$CNT'='0') AND ':CODETYPE'='1'">
+                <ACTION ATYPE="UI" TARGET="N003_1">SHOW_FORM</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <NEXTCONTROL>BOX_CODE</NEXTCONTROL>
+            </CONDITION>
+
+
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+
+
+    <!--查看失败数码-->
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="11" GROUP="NF1" HEIGHT="1" ID="BTN_DELETECODE">
+        <NAME>查看失败数码</NAME>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)!=0 FROM T_PDM_INCODE3</VVALUE>
+                <VFAIL MTYPE="ERROR">当前无错误数码！</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="UI" TARGET="N003_2">SHOW_FORM</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODETYPE">DISABLE</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_OK>
+        <V_FALSE>
+
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="11" GROUP="NF1" HEIGHT="1" ID="BTN_RESET">
+        <NAME>重置</NAME>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNULL">
+                <VVALUE>CODETYPE</VVALUE>
+                <VFAIL MTYPE="QUESTION">重置将会清除所有数据，确定要重置吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="SAVEDATA">F7</ACTION>
+            <ACTION ATYPE="SETVALUE" TARGET="CODETYPE">0</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="BOX_CODE">DISABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="BOX_CODE">HIDE</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">SHOW</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">CLEAR</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_OK>
+        <V_FALSE>
+
+        </V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="9" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <!--判断本地存不存在该单据信息-->
+        <!-- <INITDATA>
+             <ACTION ATYPE="SETDBPARAM">SELECT COUNT(0) as CNT FROM T_PDM_CODE_SZ WHERE CODE1 IS NOT NULL</ACTION>
+             <CONDITION ID="01" VAL="NOT('$CNT'='0')">
+                 <ACTION ATYPE="SETDBPARAM">SELECT F8 as x_CODETYPE FROM T_PDM_CODE_SZ</ACTION>
+                 <ACTION ATYPE="SETVALUE" TARGET="CODETYPE">$x_CODETYPE</ACTION>
+                 <ACTION ATYPE="UI" TARGET="CODETYPE">DISABLE</ACTION>
+                 <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                 <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+             </CONDITION>
+
+             <CONDITION ID="02" VAL="'$CNT'='0'">
+                 <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                 <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                 <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+             </CONDITION>
+         </INITDATA>-->
+
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <!--<V VID="01" VTYPE="ISNULL">
+                <VVALUE>PRODUCT_LIST</VVALUE>
+                <VFAIL MTYPE="QUESTION">退出将会清除所有数据，确定要退出吗？</VFAIL>
+            </V>-->
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="SAVEDATA">F7</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="N003">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="N003">
+        <NAME>瓶箱解除</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+
+        </V_OK>
+    </CONTROL>
+
+    <SAVEDATA>
+
+        <FSAVE ID='F2'>
+            DELETE FROM T_TEMP
+        </FSAVE>
+
+        <!--T_PDM_CODE_SZ 字段含义：
+        CODE1 码序号
+        OPERATOR_NO 产品编号
+        CODE2 codeLevel
+        CODE3 parentCode
+        CODE4 productID
+        F1 子码数量
+        F2 批次ID
+        F3 瓶码
+        F8 解除类型
+        F10 码状态：默认为1-->
+        <FSAVE ID="F3">
+            INSERT INTO T_PDM_CODE_SZ (CODE1,OPERATOR_NO,CODE2,CODE3,CODE4,F1,F2,F3,F10)
+            SELECT F1,F6,F4,F5,F7,F8,F9,
+            CASE WHEN length(F10)=0 THEN ':CODE_ID'
+            ELSE F10 END,'1' FROM T_TEMP
+        </FSAVE>
+
+        <FSAVE ID='F1'>
+            DELETE FROM T_PDM_CODE_SZ
+        </FSAVE>
+
+        <!--更新F10的码状态-->
+        <FSAVE ID="F5">
+            UPDATE T_PDM_CODE_SZ SET F10='0',F9='3' WHERE CODE2 = (SELECT F2 FROM T_TEMP WHERE F2=T_PDM_CODE_SZ.CODE2)
+        </FSAVE>
+
+        <!--全部成功，把F9全部改为3，便于在当前页面再次扫描时进行删除-->
+        <FSAVE ID="F10">
+            UPDATE T_PDM_CODE_SZ SET F9='3'
+        </FSAVE>
+
+        <FSAVE ID="F7">
+            DELETE FROM T_PDM_INCODE3
+        </FSAVE>
+
+        <!--存储异常T_PDM_INCODE3数码表：F5 productID，F1 异常数码  F2 异常信息   F3 产品名称-->
+        <FSAVE ID="F4">
+            INSERT INTO T_PDM_INCODE3(DoID,F1,F2,F3,OUTPRO_ZID,SCANER_NO)
+            SELECT t.F5,case when cast(':CODETYPE' as int)=1 then s.F3 else t.F2 end
+            ,t.F4,t.F6,'1',s.SCANER_NO FROM T_TEMP t
+            INNER JOIN T_PDM_CODE_SZ s on t.F2=s.CODE2
+        </FSAVE>
+
+        <!-- 删除上次完成的数码 -->
+        <FSAVE ID="F6">
+            DELETE FROM T_PDM_CODE_SZ where F9='3'
+        </FSAVE>
+
+        <FSAVE ID="F8">
+            UPDATE T_PDM_CODE_SZ SET OPERATOR_NAME='done'
+        </FSAVE>
+
+    </SAVEDATA>
+</ns0:cng_form>

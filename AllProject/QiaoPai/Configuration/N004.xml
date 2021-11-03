@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--关联替换  (只允许替换垛下的箱)-->
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="2" GROUP="NF1" HEIGHT="1" ID="CODE_ID">
+        <NAME>原箱码</NAME>
+        <FIELDNAME>CODE_ID</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <ACTION ATYPE="DECODE">:CODE_ID</ACTION>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="INFO">原箱码不能为空!</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT LENGTH(':CODE_ID') = 20</VVALUE>
+                <VFAIL MTYPE="ERROR">箱码只能是20位数字!</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+
+            <!--失败-->
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <!--<ACTION ATYPE="MESSAGE" TARGET="ERROR">${MESSAGE}</ACTION>-->
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <!--<ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F3</ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as x_PRODUCT_CODE from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="MID">$x_PRODUCT_CODE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="NEW_CODE">ENABLE</ACTION>
+                <NEXTCONTROL>NEW_CODE</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="MID">
+        <NAME>原MID</NAME>
+        <FIELDNAME>MID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="3" GROUP="NF1" HEIGHT="1" ID="NEW_CODE">
+        <NAME>替换箱码</NAME>
+        <FIELDNAME>NEW_CODE</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>NEW_CODE</VVALUE>
+                <VFAIL MTYPE="INFO">请输入替换数码！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT LENGTH(':NEW_CODE')=20</VVALUE>
+                <VFAIL MTYPE="ERROR">箱码只能是20位数字!</VFAIL>
+            </V>
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT cast(':CODE_ID' as int) != cast(':NEW_CODE' as int)</VVALUE>
+                <VFAIL MTYPE="ERROR">替换箱码与原箱码重复!</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:NEW_CODE"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+
+            <!--失败-->
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="NEW_CODE">CLEAR</ACTION>
+                <NEXTCONTROL>NEW_CODE</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <!--<ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F8</ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as x_PRODUCT_CODE2 from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="MID2">$x_PRODUCT_CODE2</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="NEW_CODE">DISABLE</ACTION>
+                <NEXTCONTROL>BTN_FINISH</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="NEW_CODE">CLEAR</ACTION>
+            <NEXTCONTROL>NEW_CODE</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <!--MID-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="MID2">
+        <NAME>MID</NAME>
+        <FIELDNAME>MID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="11" GROUP="NF1" HEIGHT="1" ID="BTN_RESET">
+        <NAME>重置</NAME>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">重置将会清除所有数据，确定要重置吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="MID">CLEAR</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="NEW_CODE">CLEAR</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="MID2">CLEAR</ACTION>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+            <ACTION ATYPE="UI" TARGET="NEW_CODE">DISABLE</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_OK>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="12" GROUP="NF3" HEIGHT="1" ID="BTN_FINISH">
+        <NAME>确认替换</NAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <VALIDATE>
+            <CONFIRM>CHANGE|KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="WARN">请录入原箱码！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="ISNOTNULL">
+                <VVALUE>NEW_CODE</VVALUE>
+                <VFAIL MTYPE="WARN">请录入替换箱码！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="ISNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确认要进行替换吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT F6 as ORDER_ID,GROUP_CONCAT(F5) AS CODELIST FROM T_PDM_CHECKOUT WHERE F8='0'
+            </ACTION>
+
+            <!--T_Temp表字段含义：
+           F1 allNum所有数码数量
+           F2 code 异常数码
+           F3 codeType
+           F4 异常信息：该码为无效码，请重新扫码
+           F5 productId
+           F6 productName
+           F7 successNum 成功数量-->
+
+            <!--替换操作-->
+            <!--第一个参数：原始数码，第二个新数码-->
+            <!-- <ACTION ATYPE="SETPARAMAR_VVV">10000646444❤10048538982</ACTION>-->
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CODE1 AS X_CODE_ID FROM T_PDM_CODE_REPLACE WHERE OPERATOR_NAME='1'
+            </ACTION>
+
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CODE1 AS X_NEW_CODE FROM T_PDM_CODE_REPLACE WHERE OPERATOR_NAME='2'
+            </ACTION>
+
+            <ACTION ATYPE="SETPARAMAR_VVV">$X_CODE_ID❤$X_NEW_CODE</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="replace/v1/do✈POSTCUSTOM_SERVICE$ARRAY_VVV"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <!--<ACTION ATYPE="MESSAGE" TARGET="ERROR">${MESSAGE}</ACTION>-->
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">替换失败，请重新进行操作！</ACTION>
+                <NEXTCONTROL>BTN_FINISH</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <!--<ACTION ATYPE="MESSAGE" TARGET="INFO">${MESSAGE}</ACTION>-->
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">替换成功!</ACTION>
+                <ACTION ATYPE="SAVEDATA">F2</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="MID">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="NEW_CODE">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="MID2">CLEAR</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="7" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <!--<INITDATA>
+            <NEXTCONTROL>OLD_CODE</NEXTCONTROL>
+        </INITDATA>-->
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="N004">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="N004">
+        <NAME>关联替换</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_OK>
+    </CONTROL>
+
+    <SAVEDATA>
+        <FSAVE ID="F1">
+            DELETE FROM T_TEMP
+        </FSAVE>
+        <!--T_PDM_CODESET_REPLACE 字段含义：
+CODE1 码序号
+OPERATOR_NO 产品编号
+CODE3 parentCode
+CODE4 productID
+F1 子码数量
+F2 批次ID
+F3 箱码
+OPERATOR_NAME 区分 原码 和 替换码-->
+        <FSAVE ID="F3">
+            INSERT INTO T_PDM_CODE_REPLACE (CODE1,OPERATOR_NO,CODE2,CODE3,CODE4,F1,F2,F3,OPERATOR_NAME)
+            SELECT F1,F6,F4,F5,F7,F8,F9,F10,'1' FROM T_TEMP
+        </FSAVE>
+
+        <FSAVE ID="F8">
+            INSERT INTO T_PDM_CODE_REPLACE (CODE1,OPERATOR_NO,CODE2,CODE3,CODE4,F1,F2,F3,OPERATOR_NAME)
+            SELECT F1,F6,F4,F5,F7,F8,F9,F10,'2' FROM T_TEMP
+        </FSAVE>
+
+        <FSAVE ID="F2">
+            DELETE FROM T_PDM_CODE_REPLACE
+        </FSAVE>
+
+    </SAVEDATA>
+</ns0:cng_form>

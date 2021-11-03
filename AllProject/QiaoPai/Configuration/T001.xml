@@ -1,0 +1,507 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--调拨扫描单 22020052114021788-->
+
+    <CONTROL CONTROLTYPE="RADIOGROUP" CTL_SHOWIDX="1" GROUP="NF2" HEIGHT="1" ID="CODETYPE">
+        <NAME>调拨类型</NAME>
+        <FIELDNAME>CODETYPE</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <SEL_FORM>FALSE</SEL_FORM>
+        <INITDATA>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT '0' as ItemId, '按箱' as ItemValue
+                union
+                SELECT '1' as ItemId, '按垛' as ItemValue
+            </INIT>
+        </INITDATA>
+        <V_OK>
+            <CONDITION ID="01" VAL="':DOID'=''">
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+            </CONDITION>
+            <CONDITION ID="02" VAL="NOT(':DOID'='')">
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="1" GROUP="NF1" HEIGHT="1" ID="DOID">
+        <NAME>调拨单号</NAME>
+        <FIELDNAME>DOID</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="INFO">调拨单号不能为空！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="REGEX">
+                <VVALUE>:DOID#^[0-9]{9,10}$</VVALUE>
+                <VFAIL MTYPE="INFO">单号只能是10位数字！</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CASE WHEN LENGTH(':DOID')=9 THEN '0:DOID' ELSE ':DOID' END as ORDER_CODE
+            </ACTION>
+            <ACTION ATYPE="SETVALUE" TARGET="DOID">$ORDER_CODE</ACTION>
+
+            <ACTION ATYPE="SAVEDATA">F6</ACTION>
+            <ACTION ATYPE="SAVEDATA">F7</ACTION>
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="order/v1/out✈GETCUSTOM_SERVICEorderCode❤:DOID"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select case when F6 is null then F1 else F6 end
+                as '{STATUS}',F2 as '{MESSAGE}',CASE WHEN LENGTH(F17)=0 OR F17 IS NULL THEN 'ERROR' ELSE F17 END as STORAGE_TYPE,F13 as O_TYPE
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}','','0' limit 0,1
+            </ACTION>
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">${MESSAGE}</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END" />
+            </CONDITION>
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0') AND '$STORAGE_TYPE'='ERROR'">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">单据类型错误，请重新扫描！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END" />
+            </CONDITION>
+            <!--OUT_SELE(销售出库),OUT_TRANSFER(调拨出库)-->
+            <CONDITION ID="03" VAL="NOT('${STATUS}'='0') AND '$STORAGE_TYPE'='OUT_SELE'">
+                <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">单据类型不匹配，请扫描调拨单！</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END" />
+            </CONDITION>
+            <!--判断当前单据状态 6 当前订单已完成 7 当前订单已关闭-->
+            <CONDITION ID="04" VAL="NOT('${STATUS}'='0') AND ('$O_TYPE'='6' OR '$O_TYPE'='7')">
+                <ACTION ATYPE="SETDBPARAM">
+                    select case WHEN '$O_TYPE'='6' THEN '当前订单已完成!'
+                    WHEN '$O_TYPE'='7' THEN '当前订单已关闭!'
+                    ELSE '当前订单已完成!' END AS O_MESSAGE
+                </ACTION>
+                <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">$O_MESSAGE</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END" />
+            </CONDITION>
+            <CONDITION ID="05" VAL="NOT('${STATUS}'='0') AND NOT('$STORAGE_TYPE'='') AND '$STORAGE_TYPE'='OUT_TRANSFER'">
+                <!--<ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F1</ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT DoID as DOID,RMF_NAME as X_PRODUCTNAME FROM T_PDM_SENDSTORE_ALLOT WHERE DoID=':DOID'
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="RECEIVE_UNIT">$X_PRODUCTNAME</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="UI" TARGET="DOID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+        </V_OK>
+
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+            <NEXTCONTROL>DOID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTLONGBOX" CTL_SHOWIDX="3" GROUP="NF1" HEIGHT="1" ID="RECEIVE_UNIT">
+        <NAME>收货单位</NAME>
+        <FIELDNAME>RECEIVE_UNIT</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="8" GROUP="NF1" HEIGHT="1" ID="CODE_ID">
+        <NAME>录入数码</NAME>
+        <FIELDNAME>CODE_ID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="CODE_ID">DISABLE</ACTION>
+        </INITDATA>
+
+        <VALIDATE>
+            <ACTION ATYPE="DECODE">:CODE_ID</ACTION>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="INFO">数码不能为空！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="REGEX">
+                <VVALUE>:CODE_ID#^.{48}$|^[0-9a-zA-Z]{20}$|^\d{17}$|^\d{20}$</VVALUE>
+                <VFAIL MTYPE="INFO">数码长度不正确或规则不匹配！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)=0 FROM T_PDM_CHECKOUT_ALLOT WHERE PRO_BARCODE=':CODE_ID'</VVALUE>
+                <VFAIL MTYPE="INFO">数码已被扫描！</VFAIL>
+            </V>
+            <V VID="04" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)=0 FROM T_PDM_CHECKOUT_ALLOT WHERE PRO_BARCODE=':CODE_ID' OR F10=':CODE_ID'</VVALUE>
+                <VFAIL MTYPE="INFO">数码已被扫描或已通过虚拟垛录入！</VFAIL>
+            </V>
+            <V VID="07" VTYPE="DATABASE">
+                <VVALUE>
+                    SELECT CASE
+                    WHEN CAST(':CODETYPE' as int) =0 AND LENGTH(':CODE_ID')=17 THEN 0
+                    ELSE 1 END
+                </VVALUE>
+                <VFAIL MTYPE="INFO">请根据选择的调拨类型扫描正确的数码！</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+
+            <ACTION ATYPE="SETPARAM">M_NUM=0</ACTION>
+            <!--说明：
+            1.允许录入的码制：
+            鹏致48位（含特殊字符）和20位数字+字母。
+            码中台20位数字 17位数字
+
+            2.调拨类型默认按瓶箱，查码接口默认传0，即按箱查
+            当选择按垛时，允许录入：20位数字，20位数字字母组合，17位垛码，48位
+            当录入17位垛码时，查码接口传1-->
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CASE WHEN
+                LENGTH(':CODE_ID')=20 AND CAST(':CODETYPE' as int)=1 THEN 0
+                when LENGTH(':CODE_ID')=17 AND CAST(':CODETYPE' as int)=1 THEN 1
+                ELSE 0 END AS XCODETYPE,
+                CASE WHEN CAST('$PackagingLevel' AS int)>20 THEN 1 ELSE 0 END AS ISTXCODE,'0' AS HASTHISPRO
+            </ACTION>
+            <!-- CODE_ID 的长度-->
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CASE WHEN
+                LENGTH(':CODE_ID')=17 THEN 0
+                ELSE 1 END AS CODE_ID_LENGTH
+            </ACTION>
+
+            <!-- 确认是否是腾讯的数码：$ISTXCODE  1表示是DTS的数码 0表示 腾讯的数码-->
+            <!-- 处理码中台数码逻辑-->
+            <!--选按箱时-->
+            <CONDITION ID="01" VAL="'$ISTXCODE'='0' AND ':CODETYPE'='0'">
+                <!-- <ACTION ATYPE="LOG">1</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F6</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID|filter❤true"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+            <!--选按垛，并且录入的是17位垛码-->
+            <CONDITION ID="02" VAL="'$ISTXCODE'='0' AND ':CODETYPE'='1' AND '$CODE_ID_LENGTH'='0'">
+                <!--<ACTION ATYPE="LOG">2</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F6</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈1✈POSTCUSTOM_SERVICEcode❤:CODE_ID|filter❤true"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+            <!--选按垛，并且录入的是20位箱码-->
+            <CONDITION ID="03" VAL="'$ISTXCODE'='0' AND ':CODETYPE'='1'AND '$CODE_ID_LENGTH'='1'">
+                <!--<ACTION ATYPE="LOG">3</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F6</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID|filter❤true"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+            <!--根据上面返回的数据进行第二次查询，根据上一个接口返回的parentCode查询所有子码序号-->
+            <CONDITION ID="04" VAL="'$ISTXCODE'='0' AND ':CODETYPE'='1'AND '$CODE_ID_LENGTH'='1' AND NOT('${STATUS}'='0') ">
+                <!--<ACTION ATYPE="LOG">4</ACTION>-->
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F5 as P_CODE from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈1✈POSTCUSTOM_SERVICEcode❤$P_CODE|filter❤true"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+
+            <!--失败-->
+            <CONDITION ID="05" VAL="'$ISTXCODE'='0' AND '${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">${MESSAGE}</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="SCANTIP">错误：录入条码失败！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--校验产品-->
+            <CONDITION ID="06" VAL="'$ISTXCODE'='0' AND NOT('${STATUS}'='0')">
+                <ACTION ATYPE="SETDBPARAM">
+                    select COUNT(1)> 0 AS HASTHISPRO from T_PDM_SENDSTORE_ALLOT WHERE OUTPRO_CCNID=(select F7 from T_TEMP LIMIT 1)
+                </ACTION>
+                <ACTION ATYPE="ADDAMOUNT">M_NUM</ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT cast(F6 as int) as X_PLAN from T_PDM_SENDSTORE_ALLOT where OUTPRO_CCNID=(select F7 from T_TEMP LIMIT 1)
+                </ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT SUM(F2) as X_REAL_NUM from T_PDM_CHECKOUT_ALLOT where OUTPRO_ZID=(select F7 from T_TEMP LIMIT 1)
+                </ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT COUNT(*) as X_TEMP_NUM from T_TEMP
+                </ACTION>
+
+                <!--<ACTION ATYPE="LOG">$X_PLAN - $X_REAL_NUM - $X_TEMP_NUM</ACTION>-->
+            </CONDITION>
+
+            <CONDITION ID="07" VAL="'$ISTXCODE'='0' AND NOT('${STATUS}'='0') AND '$HASTHISPRO'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">该条码产品与单据产品不匹配！</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="SCANTIP">错误：录入条码失败！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="08" VAL="'$ISTXCODE'='0' AND NOT('${STATUS}'='0') AND $X_REAL_NUM+$M_NUM > $X_PLAN">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">已扫数量大于计划数量！</ACTION>
+                <ACTION ATYPE="SETPARAM">M_NUM=0</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <!--当选了按垛，扫箱，需要对垛中的数量和计划数量对比-->
+            <CONDITION ID="09" VAL="'$ISTXCODE'='0' AND NOT('${STATUS}'='0') AND '$CODE_ID_LENGTH'='1' AND $X_REAL_NUM+$X_TEMP_NUM > $X_PLAN">
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">已扫数量将大于计划数量！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <!--成功-->
+            <CONDITION ID="11" VAL="'$ISTXCODE'='0' AND NOT('${STATUS}'='0')">
+                <!-- <ACTION ATYPE="BEEP">Success.wav</ACTION>-->
+                <ACTION ATYPE="SAVEDATA">F8</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="SCANTIP">成功：录入1条数码！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <!--扫码提示-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="5" GROUP="NF1" HEIGHT="1" ID="SCANTIP">
+        <NAME>扫码提示</NAME>
+        <FIELDNAME>SCANTIP</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+    </CONTROL>
+
+    <!--产品明细列表-->
+    <CONTROL CONTROLTYPE="READONLYVIEW" CTL_SHOWIDX="6" GROUP="NF1" HEIGHT="4" ID="PRODUCT_LIST">
+        <NAME>产品明细列表</NAME>
+        <FIELDNAME>PRODUCT_LIST</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="PRODUCT_LIST">DISABLE</ACTION>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT DISTINCT '' AS '产品名称',
+                '' AS '计划',
+                '' AS '已扫'
+                From T_TEMP WHERE F1='T_TEMP'
+            </INIT>
+            <INIT IID="02" OTYPE="INIT_NOT_DATABASE">
+                SELECT OUTPRO_NAME as '产品名称',
+                CAST(F6 as int) || F4 as '计划',
+                (SELECT CASE WHEN COUNT(1)>0 THEN SUM(C.F2)||'箱' ELSE '0箱' END FROM T_PDM_CHECKOUT_ALLOT C WHERE C.DoID ='$DOID' and C.OUTPRO_ZID
+                =P.OUTPRO_CCNID) as '已扫' From T_PDM_SENDSTORE_ALLOT P WHERE DoID='$DOID'
+                union all
+                SELECT OUTPRO_NAME as '产品名称',
+                '0' as '计划',
+                CASE WHEN COUNT(1)>0 THEN SUM(S.F2) ELSE '0' END as '已扫'
+                From T_PDM_CHECKOUT_ALLOT S WHERE DoID='$DOID' AND F8='1' GROUP BY OUTPRO_ZID
+            </INIT>
+        </INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="10" GROUP="NF3" HEIGHT="1" ID="BTN_END">
+        <NAME>完成调拨</NAME>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="WARN">请扫描单号后再操作！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(1)>0 FROM T_PDM_CHECKOUT_ALLOT WHERE DoID=':DOID'</VVALUE>
+                <VFAIL MTYPE="ERROR">扫描数量为空，请先扫描数码！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="ISNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要完成当前调拨单吗？</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+            <!--F8数码类型是否为腾讯 1是DTS的数码 0腾讯数码  根据F8 查询是否存在腾讯数码-->
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT COUNT(0)>0 AS IS_TX_CODE from T_PDM_CHECKOUT_ALLOT where F8='0'
+            </ACTION>
+            <!--存在腾讯码-->
+            <CONDITION ID="01" VAL="'$IS_TX_CODE'='1'">
+                <ACTION ATYPE="SAVEDATA">F6</ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as ORDER_ID,GROUP_CONCAT(F5) AS CODELIST,GROUP_CONCAT(CASE WHEN SMF_ZID IS NULL OR LENGTH(SMF_ZID)=0 THEN ' ' ELSE
+                    SMF_ZID END) AS codeTypes FROM T_PDM_CHECKOUT_ALLOT WHERE F8='0'
+                </ACTION>
+                <ACTION ATYPE="SETPARAMARRAYJSON" TARGET="code❤codeType">$CODELIST❤$codeTypes</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA"
+                    TARGET="storage/v1/out✈POSTCUSTOM_SERVICEstorageId❤$ORDER_ID|unitType❤#DEVICENO|longitude❤^LOGITUDE|latitude❤^LATITUDE|codes❤$ARRAY_code"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="'$IS_TX_CODE'='1' AND '${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">调拨失败，请重试！</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="03" VAL="'$IS_TX_CODE'='1' AND NOT('${STATUS}'='0')">
+                <!--删除腾讯数码和单据-->
+                <ACTION ATYPE="SAVEDATA">F7</ACTION>
+                <ACTION ATYPE="SAVEDATA">F10</ACTION>
+                <ACTION ATYPE="MESSAGE" TARGET="INFO">调拨成功！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="DOID">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="RECEIVE_UNIT">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="SCANTIP">CLEAR</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">CLEAR</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="DOID">ENABLE</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+        </V_OK>
+        <V_FALSE>
+
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="14" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+            <!--判断本地存不存在该单据信息-->
+            <ACTION ATYPE="SETDBPARAM">SELECT COUNT(0) as CNT FROM T_PDM_SENDSTORE_ALLOT WHERE DoID IS NOT NULL</ACTION>
+            <CONDITION ID="01" VAL="NOT('$CNT'='0')">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT RMF_NAME AS RMF_NAME,DoID AS DOID FROM T_PDM_SENDSTORE_ALLOT WHERE DoID IS NOT NULL LIMIT 1
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="DOID">$DOID</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="RECEIVE_UNIT">$RMF_NAME</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="UI" TARGET="DOID">DISABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODE_ID">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="'$CNT'='0'">
+                <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>
+                <NEXTCONTROL>DOID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="02" VTYPE="ISNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="T001_liveDoSend">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="T001_liveDoSend">
+        <NAME>调拨扫描</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK>
+
+        </V_OK>
+
+    </CONTROL>
+    <SAVEDATA>
+        <FSAVE ID="F6">
+            DELETE FROM T_TEMP
+        </FSAVE>
+        <FSAVE ID="F7">
+            DELETE FROM T_PDM_SENDSTORE_ALLOT WHERE DoID=':DOID'
+        </FSAVE>
+        <!--
+          T_TEMP表中字段含义：
+          F17 OUT_SELE(销售出库),OUT_TRANSFER(调拨出库)
+          F13 status
+          F10 收货单位
+          F7 调拨单号
+          F9 receiveId
+          F15 productId
+          F16 产品名称
+          F4 订单实际数量 actualNum
+          F6 id
+          F1 actualNum 实扫数量
+          F2 codeLevel 层级
+          F3 levelName（如：箱）
+          F8 订单总箱数
+          F14 计划-->
+        <FSAVE ID="F1">
+            INSERT INTO T_PDM_SENDSTORE_ALLOT
+            (DoIDStatus,DoLine,RMF_NAME,DoID,RMF_ZID,OUTPRO_CCNID,OUTPRO_NAME,SendNum,F1,F2,F3,F4,F5,F6,F7)
+            SELECT F13,'1',F10,F12,F9,F15,F16,F4,F6,F1,F2,F3,F8,F14,F17 FROM T_TEMP
+        </FSAVE>
+        <!--PRO_BARCODE 存入扫描的数码删除数码用改字段,F1 箱码统计数量用该字段 ,F2数码箱的数量，F3数码单品的数量，F8数码类型是否为腾讯 1是DTS的数码 0腾讯的数码 ，
+        F7值1为托，0为箱或单品  不用处理，F4 对应垛码-->
+        <!--存腾讯码的SQL-->
+        <FSAVE ID="F8">
+            INSERT INTO T_PDM_CHECKOUT_ALLOT (DoID,OUTPRO_NAME,OUTPRO_ZID,PRO_BARCODE,SCAN_TIME,SCANER_NO,F1,F2,F3,F8,F7,F5,F6,F10)
+            select ':DOID',S.OUTPRO_NAME,S.OUTPRO_CCNID,':CODE_ID','^SYSDATE','#DEVICENO',T.F1,'1','0','0','1',T.F1,S.F1,T.F5 from T_TEMP T INNER
+            JOIN T_PDM_SENDSTORE_ALLOT S on S.OUTPRO_CCNID=T.F7
+        </FSAVE>
+        <FSAVE ID="F7">
+            DELETE FROM T_PDM_SENDSTORE_ALLOT where DoID=':DOID'
+        </FSAVE>
+        <FSAVE ID="F10">
+            DELETE FROM T_PDM_CHECKOUT_ALLOT where F8='0' AND DoID=':DOID'
+        </FSAVE>
+    </SAVEDATA>
+</ns0:cng_form>

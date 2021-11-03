@@ -1,0 +1,255 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--信息查询 -->
+    <!--说明：
+    查询数码：可以按瓶或箱进行产品信息查询，扫描箱码（1.调用查码接口，按箱查，2.调用查瓶码接口）-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="8" GROUP="NF1" HEIGHT="1" ID="CODE_ID">
+        <NAME>查询数码</NAME>
+        <FIELDNAME>CODE_ID</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <VALIDATE>
+            <ACTION ATYPE="DECODE">:CODE_ID</ACTION>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="INFO">数码不能为空！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="REGEX">
+                <VVALUE>:CODE_ID#^\d{10}$|^\d{20}$</VVALUE>
+                <VFAIL MTYPE="INFO">只能录入10位瓶码和20位箱码！</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT CASE WHEN
+                LENGTH(':CODE_ID')=20 THEN 1
+                WHEN LENGTH(':CODE_ID')=10 THEN 0
+                ELSE 1 END AS XCODETYPE
+            </ACTION>
+            <!-- $XCODETYPE=1 是箱码  $XCODETYPE=0 是瓶码-->
+            <!--调用箱码的接口-->
+            <CONDITION ID="01" VAL="'$XCODETYPE'='1'">
+                <ACTION ATYPE="SAVEDATA">F1</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+            <CONDITION ID="02" VAL="'$XCODETYPE'='1' AND '${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="03" VAL="'$XCODETYPE'='1' AND NOT('${STATUS}'='0')">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as X_PROCODE,F7 as X_ProductID,F11 as BITCHID,F12 as X_ProductionTime,F14 as X_OrderCode,F15 as
+                    X_LOCAL from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select OPERATOR_NAME as X_CurrentStatus from T_PDM_SPECSTOCK where PRO_BARCODE=(SELECT F13 from T_TEMP)
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="MID">$X_PROCODE</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="ProductBatch">$BITCHID</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="TIME">$X_ProductionTime</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="XLOCAL">$X_LOCAL</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="STATUS">$X_CurrentStatus</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="DOID">$X_OrderCode</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="feign/v1/product✈$X_ProductID✈GETCUSTOM_SERVICE❤"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F3 as X_ProductName from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="TIP">$X_ProductName</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+
+            <!--调用瓶码的接口-->
+            <CONDITION ID="07" VAL="'$XCODETYPE'='0'">
+                <ACTION ATYPE="SAVEDATA">F1</ACTION>
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="code/v1/bottle✈0✈POSTCUSTOM_SERVICEcode❤:CODE_ID"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                    from T_TEMP union all
+                    select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+                </ACTION>
+            </CONDITION>
+            <CONDITION ID="08" VAL="'$XCODETYPE'='0' AND '${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="09" VAL="'$XCODETYPE'='0' AND NOT('${STATUS}'='0')">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as X_PROCODE,F7 as X_ProductID,F11 as BITCHID,F12 as X_ProductionTime,F14 as X_OrderCode,F15 as
+                    X_LOCAL from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select OPERATOR_NAME as X_CurrentStatus from T_PDM_SPECSTOCK where PRO_BARCODE=(SELECT F13 from T_TEMP)
+                </ACTION>
+
+               <!-- <ACTION ATYPE="SETDBPARAM">
+                    SELECT F6 as X_PROCODE,F7 as X_ProductID,F10 as BITCHID,F11 as X_ProductionTime,F13 as X_OrderCode,F14 as
+                    X_LOCAL from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    select OPERATOR_NAME as X_CurrentStatus from T_PDM_SPECSTOCK where PRO_BARCODE=(SELECT F12 from T_TEMP)
+                </ACTION>-->
+                <ACTION ATYPE="SETVALUE" TARGET="MID">$X_PROCODE</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="ProductBatch">$BITCHID</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="TIME">$X_ProductionTime</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="XLOCAL">$X_LOCAL</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="STATUS">$X_CurrentStatus</ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="DOID">$X_OrderCode</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+
+                <ACTION ATYPE="GET_REMOTE_DATA" TARGET="feign/v1/product✈$X_ProductID✈GETCUSTOM_SERVICE❤"></ACTION>
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT F3 as X_ProductName from T_TEMP
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="TIP">$X_ProductName</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="CODE_ID">CLEAR</ACTION>
+            <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="TEXTLONGBOX" CTL_SHOWIDX="4" GROUP="NF1" HEIGHT="1" ID="TIP">
+        <NAME>产品名称</NAME>
+        <FIELDNAME>TIP</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+    </CONTROL>
+
+    <!--MID-->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="MID">
+        <NAME>MID</NAME>
+        <FIELDNAME>MID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="ProductBatch">
+        <NAME>GSAP批次</NAME>
+        <FIELDNAME>ProductBatch</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="TIME">
+        <NAME>生产时间</NAME>
+        <FIELDNAME>TIME</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="XLOCAL">
+        <NAME>当前位置</NAME>
+        <FIELDNAME>XLOCAL</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="STATUS">
+        <NAME>当前状态</NAME>
+        <FIELDNAME>STATUS</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="7" GROUP="NF2" HEIGHT="1" ID="DOID">
+        <NAME>出库单号</NAME>
+        <FIELDNAME>DOID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>TRUE</ISREADONLY>
+        <INITDATA></INITDATA>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="7" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="SAVEDATA">F2</ACTION>
+            <!--companyId 测试环境2 正式环境3-->
+            <ACTION ATYPE="GET_REMOTE_DATA" TARGET="feign/v1/tag-status/list✈GETCUSTOM_SERVICEcompanyId❤3"></ACTION>
+            <ACTION ATYPE="SETDBPARAM">
+                select F1 as '{STATUS}',F2 as '{MESSAGE}'
+                from T_TEMP union all
+                select 0 as '{STATUS}','通讯失败' as '{MESSAGE}' limit 0,1
+            </ACTION>
+            <CONDITION ID="01" VAL="'${STATUS}'='0'">
+                <ACTION ATYPE="MESSAGE" TARGET="ERROR">码中台数据返回异常！</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="N005">CLOSE</ACTION>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+            <!--成功-->
+            <CONDITION ID="02" VAL="NOT('${STATUS}'='0')">
+                <ACTION ATYPE="SAVEDATA">F3</ACTION>
+                <NEXTCONTROL>CODE_ID</NEXTCONTROL>
+            </CONDITION>
+
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNULL">
+                <VVALUE>CODE_ID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="N005">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="N005">
+        <NAME>信息查询</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+        </VALIDATE>
+        <V_OK></V_OK>
+    </CONTROL>
+
+    <SAVEDATA>
+        <FSAVE ID="F1">
+            DELETE FROM T_TEMP
+        </FSAVE>
+        <FSAVE ID="F2">
+            DELETE FROM T_PDM_SPECSTOCK
+        </FSAVE>
+        <FSAVE ID="F3">
+            INSERT INTO T_PDM_SPECSTOCK (OPERATOR_NAME,SCANER_NO,PRO_BARCODE,SCAN_TIME)
+            select F3,F2,F1,'2021-05-08 15:21:59' from T_TEMP
+        </FSAVE>
+
+    </SAVEDATA>
+</ns0:cng_form>

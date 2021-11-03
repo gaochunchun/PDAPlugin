@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ns0:cng_form xmlns:ns0="http://www.yesno.com.cn/mobile">
+    <!--按数码删除-->
+
+    <!--
+        <CONTROL CONTROLTYPE="RADIOGROUP" CTL_SHOWIDX="1" GROUP="NF2" HEIGHT="1" ID="CODETYPE">
+            <NAME>数码类型</NAME>
+            <FIELDNAME>CODETYPE</FIELDNAME>
+            <ALLOWINPUT>FALSE</ALLOWINPUT>
+            <ALLOWSCAN>FALSE</ALLOWSCAN>
+            <ISREADONLY>FALSE</ISREADONLY>
+            <SEL_FORM>FALSE</SEL_FORM>
+            <INITDATA>
+                <INIT IID="01" OTYPE="DATABASE">
+                    SELECT '0' as ItemId, '按箱' as ItemValue
+                    union
+                    SELECT '1' as ItemId, '按托' as ItemValue
+                </INIT>
+            </INITDATA>
+            <V_OK>
+                <CONDITION ID="01" VAL="':BarCode'=''">
+                    <NEXTCONTROL>BarCode</NEXTCONTROL>
+                </CONDITION>
+                <CONDITION ID="02" VAL="NOT(':BarCode'='')">
+                    <NEXTCONTROL>BarCode</NEXTCONTROL>
+                </CONDITION>
+            </V_OK>
+            <V_FALSE></V_FALSE>
+        </CONTROL>
+    -->
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="1" GROUP="NF1" HEIGHT="1" ID="BarCode">
+        <NAME>录入数码</NAME>
+        <FIELDNAME>BarCode</FIELDNAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>TRUE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <ACTION ATYPE="DECODE">:BarCode</ACTION>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>BarCode</VVALUE>
+                <VFAIL MTYPE="INFO">数码不能为空！</VFAIL>
+            </V>
+
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>SELECT LENGTH(':BarCode')!=10</VVALUE>
+                <VFAIL MTYPE="INFO">非DTS产品不支持瓶！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="REGEX">
+                <VVALUE>:BarCode#^.{48}$|^[0-9a-zA-Z]{20}$|^\d{12}$|^\d{17}$|^\d{20}$|^\d{22}$</VVALUE>
+                <VFAIL MTYPE="INFO">数码长度不正确或规则不匹配！</VFAIL>
+            </V>
+
+            <V VID="04" VTYPE="DATABASE">
+                <VVALUE>SELECT COUNT(0)>0 FROM T_PDM_CHECKOUT WHERE PRO_BARCODE=':BarCode'</VVALUE>
+                <VFAIL MTYPE="ERROR">该数码不存在！</VFAIL>
+            </V>
+        </VALIDATE>
+
+        <V_OK>
+            <ACTION ATYPE="SETDBPARAM">
+                SELECT DoID as DOID FROM T_PDM_CHECKOUT WHERE PRO_BARCODE=':BarCode'
+            </ACTION>
+            <ACTION ATYPE="DATASET" TARGET="DOID">INIT</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+            <ACTION ATYPE="UI" TARGET="BarCode">DISABLE</ACTION>
+            <NEXTCONTROL>BTN_DELETE</NEXTCONTROL>
+
+        </V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="BarCode">CLEAR</ACTION>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+
+    <CONTROL CONTROLTYPE="TEXTBOX" CTL_SHOWIDX="3" GROUP="NF1" HEIGHT="1" ID="DOID">
+        <NAME>出库单号</NAME>
+        <FIELDNAME>DOID</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+    </CONTROL>
+
+    <!--产品明细列表-->
+    <CONTROL CONTROLTYPE="READONLYVIEW" CTL_SHOWIDX="7" GROUP="NF1" HEIGHT="6" ID="PRODUCT_LIST">
+        <NAME>产品明细列表</NAME>
+        <FIELDNAME>PRODUCT_LIST</FIELDNAME>
+        <ALLOWINPUT>FALSE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <INITDATA>
+            <ACTION ATYPE="UI" TARGET="PRODUCT_LIST">DISABLE</ACTION>
+            <INIT IID="01" OTYPE="DATABASE">
+                SELECT DISTINCT '' AS '产品名称',
+                '' AS '计划',
+                '' AS '已扫'
+                From T_TEMP WHERE F1='T_TEMP'
+            </INIT>
+            <INIT IID="02" OTYPE="INIT_NOT_DATABASE">
+                SELECT OUTPRO_NAME as '产品名称',
+                CAST(F6 as int) || F4 as '计划',
+                (SELECT CASE WHEN COUNT(1)>0 THEN SUM(C.F2)||'箱' ELSE '0箱' END FROM T_PDM_CHECKOUT C WHERE C.DoID ='$DOID' and C.OUTPRO_ZID
+                =P.OUTPRO_CCNID) as '已扫' From T_PDM_SENDSTORE P WHERE DoID='$DOID'
+                union all
+                SELECT OUTPRO_NAME as '产品名称',
+                '0' as '计划',
+                CASE WHEN COUNT(1)>0 THEN SUM(S.F2) ELSE '0' END as '已扫'
+                From T_PDM_CHECKOUT S WHERE DoID='$DOID' AND F8='1' GROUP BY OUTPRO_ZID
+            </INIT>
+        </INITDATA>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="5" GROUP="NF3" HEIGHT="1" ID="BTN_DELETE">
+        <NAME>确定删除</NAME>
+        <ALLOWINPUT>TRUE</ALLOWINPUT>
+        <ALLOWSCAN>FALSE</ALLOWSCAN>
+        <ISREADONLY>FALSE</ISREADONLY>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="01" VTYPE="ISNOTNULL">
+                <VVALUE>BarCode</VVALUE>
+                <VFAIL MTYPE="ERROR">请扫描数码再操作！</VFAIL>
+            </V>
+            <V VID="02" VTYPE="DATABASE">
+                <VVALUE>
+                    SELECT COUNT(1)>0 FROM T_PDM_CHECKOUT where PRO_BARCODE =':BarCode'
+                </VVALUE>
+                <VFAIL MTYPE="ERROR">该数码没有扫描不能进行删除操作！</VFAIL>
+            </V>
+            <V VID="03" VTYPE="ISNULL">
+                <VVALUE>BarCode</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要删除【:BarCode】吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="SAVEDATA">F1</ACTION>
+            <ACTION ATYPE="MESSAGE" TARGET="INFO">数码删除成功！</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+            <ACTION ATYPE="DATASET" TARGET="BarCode">CLEAR</ACTION>
+            <ACTION ATYPE="UI" TARGET="BarCode">ENABLE</ACTION>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+            <ACTION ATYPE="GOTO" TARGET="END" />
+        </V_OK>
+        <V_FALSE></V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="BUTTON" CTL_SHOWIDX="7" GROUP="NF0" HEIGHT="1" ID="BTN_CLOSE">
+        <NAME>退出</NAME>
+        <INITDATA>
+            <!--判断本地存不存在该单据信息-->
+            <ACTION ATYPE="SETDBPARAM">SELECT COUNT(0) as CNT FROM T_PDM_SENDSTORE WHERE DoID IS NOT NULL</ACTION>
+            <CONDITION ID="01" VAL="NOT('$CNT'='0')">
+                <ACTION ATYPE="SETDBPARAM">
+                    SELECT DoID AS DOID FROM T_PDM_SENDSTORE WHERE DoID IS NOT NULL LIMIT 1
+                </ACTION>
+                <ACTION ATYPE="SETVALUE" TARGET="DOID">$DOID</ACTION>
+                <ACTION ATYPE="DATASET" TARGET="PRODUCT_LIST">INIT</ACTION>
+                <ACTION ATYPE="UI" TARGET="BarCode">ENABLE</ACTION>
+                <ACTION ATYPE="UI" TARGET="DOID">DISABLE</ACTION>
+                <!-- <ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>-->
+                <NEXTCONTROL>BarCode</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+
+            <CONDITION ID="02" VAL="'$CNT'='0'">
+                <!--<ACTION ATYPE="UI" TARGET="CODETYPE">ENABLE</ACTION>-->
+                <NEXTCONTROL>BarCode</NEXTCONTROL>
+                <ACTION ATYPE="GOTO" TARGET="END"></ACTION>
+            </CONDITION>
+        </INITDATA>
+        <VALIDATE>
+            <CONFIRM>KEY_ENTER</CONFIRM>
+            <V VID="02" VTYPE="ISNULL">
+                <VVALUE>DOID</VVALUE>
+                <VFAIL MTYPE="QUESTION">确定要退出吗？</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK>
+            <ACTION ATYPE="DATASET" TARGET="C002_PACKDELETE">CLOSE</ACTION>
+        </V_OK>
+        <V_FALSE>
+            <NEXTCONTROL>BarCode</NEXTCONTROL>
+        </V_FALSE>
+    </CONTROL>
+
+    <CONTROL CONTROLTYPE="FORM" CTL_SHOWIDX="0" GROUP="NF1" HEIGHT="1" ID="C002_PACKDELETE">
+        <NAME>按数码删除</NAME>
+        <VALIDATE>
+            <CONFIRM>LOAD</CONFIRM>
+            <V VID="01" VTYPE="DATABASE">
+                <VVALUE>select COUNT(1)>0 FROM T_PDM_CHECKOUT WHERE DoID IS NOT NULL</VVALUE>
+                <VFAIL MTYPE="INFO">还没有扫描数据，请扫描后再操作！</VFAIL>
+            </V>
+        </VALIDATE>
+        <V_OK></V_OK>
+        <V_FALSE>
+            <ACTION ATYPE="DATASET" TARGET="C002_PACKDELETE">CLOSE</ACTION>
+        </V_FALSE>
+    </CONTROL>
+
+    <SAVEDATA>
+        <FSAVE ID="F1">
+            DELETE FROM T_PDM_CHECKOUT where PRO_BARCODE =':BarCode'
+        </FSAVE>
+
+        <FSAVE ID="F2">
+            UPDATE T_PDM_SENDSTORE SET DoIDStatus='1' WHERE DoID='@C001_DOID' AND OUTPRO_CCNID='@C001_PROID'
+        </FSAVE>
+
+        <FSAVE ID="F3">
+            DELETE FROM T_PDM_CHECKOUT where PRO_BARCODE =':BarCode'
+        </FSAVE>
+    </SAVEDATA>
+
+</ns0:cng_form>
