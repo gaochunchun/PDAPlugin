@@ -1,6 +1,6 @@
 # PDAPlugin
 ccn pda plugin.
-#### 安装教程
+#### Plugin安装教程
 
 **1.Import**
 
@@ -16,11 +16,23 @@ allprojects {
     }
 }
 ```
-Step 2. Add the dependency
 
-Add it in your **module** build.gradle at the end of dependencies:
+Step 2. Add the classpath to your build file.
+
+Add it in your **root** build.gradle at the dependency:
+
 ```
-dependencies {
-   implementation 'com.github.gaochunchun:PDAPlugin:Tag'
- }
+buildscript {
+    dependencies {
+        ...
+         classpath'com.github.gaochunchun:PDAPlugin:1.2'
+    }
+}
+```
+
+Step 3. Add the dependency
+
+Add it in your **module** build.gradle at the top:
+```
+apply plugin: 'com.ccn.plugin'
 ```

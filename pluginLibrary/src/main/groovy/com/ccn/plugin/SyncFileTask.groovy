@@ -4,7 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 
-class SyncOrPushFile implements Plugin<Project> {
+class SyncFileTask implements Plugin<Project> {
 
     void apply(Project target) {
         //def rootProjectPath = rootProject.projectDir.path
@@ -20,8 +20,7 @@ class SyncOrPushFile implements Plugin<Project> {
 
     }
 
-    static void A_PushXmlToPDA(def projectName, Project target) {
-
+    void A_PushXmlToPDA(def projectName, Project target) {
         def rootProjectPath = System.getProperty("user.dir") + File.separator + 'AllProject' + File.separator + projectName + File.separator
         def PDASDCardPath = ' /sdcard/防伪追溯/'
         println '--------------------------------->' + rootProjectPath
