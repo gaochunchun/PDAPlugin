@@ -1,2 +1,4 @@
 rootProject.name = "PDAPlugin"
-include ':pluginLibrary',':plugintest'
+include ':pluginLibrary'
+include ':plugintest'
+include ':buildSrc'
