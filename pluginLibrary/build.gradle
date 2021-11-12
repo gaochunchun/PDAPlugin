@@ -1,6 +1,6 @@
 apply plugin: 'groovy'
 //apply plugin: 'java-library'
-//apply plugin: 'java-gradle-plugin'
+apply plugin: 'java-gradle-plugin'
 apply plugin: 'com.github.dcendents.android-maven'
 group = 'com.github.gaochunchun'
 

@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-//apply plugin: 'com.ccn.plugin'
+apply plugin: 'com.ccn.plugin'
 android {
     compileSdkVersion 28
 
@@ -9,12 +9,12 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            buildConfigField "String", "APP_TYPE", "\"QiaoPai\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -22,11 +22,21 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    lintOptions {
+        checkReleaseBuilds false    //打包Release版本时是否进行检测
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false     //This is important, it will run lint checks but won't abort build
+    }
 }
 
 dependencies {
-
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support.constraint:constraint-layout:2.0.4'
-    //api project(':pluginLibrary')
+}
+
+PDAPlugin {
+    name 'QiaoPai'  //(必须) AllProject目录下项目名称
+    //pdaSDCardDirName '防伪追溯' //(可选非必须)Task所操作SDCard下的 防伪追溯 目录
+    //s8_ZipXmlName '101379039353_1.0.1'//(可选非必须)超8平台重命名Xml文件和Zip文件的名称
 }
