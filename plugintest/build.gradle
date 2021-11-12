@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-//apply plugin: 'com.ccn.plugin'
+apply plugin: 'com.ccn.plugin'
 android {
     compileSdkVersion 28
 
@@ -35,10 +35,8 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:2.0.4'
 }
 
-/*
 PDAPlugin {
     name 'QiaoPai'  //(必须) AllProject目录下项目名称
-    //pdaSDCardDirName '防伪追溯' //(可选非必须)Task所操作SDCard下的 防伪追溯 目录
-    //s8_ZipXmlName '101379039353_1.0.1'//(可选非必须)超8平台重命名Xml文件和Zip文件的名称
+    //pdaSDCardDirName '防伪追溯' //(可选)Task所操作SDCard下的 防伪追溯 目录
+    //s8_ZipXmlName '101379039353_1.0.1'//(可选)超8平台重命名Xml文件和Zip文件时的文件名
 }
-*/
