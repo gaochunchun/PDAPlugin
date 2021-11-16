@@ -335,7 +335,7 @@ class SyncFileTask {
             description = "打包zip到asserts目录下"
 
             def resProjectPath = project.rootDir.path + File.separator + 'AllProject' + File.separator + projectName
-            def targetPath = System.getProperty("user.dir") + File.separator + 'src' + File.separator + 'main' + File.separator + 'assets'
+            def targetPath = project.projectDir.path + File.separator + 'src' + File.separator + 'main' + File.separator + 'assets'
 
             from resProjectPath
             exclude('_ProjectOtherFile', 'Data', '归档文件_*')//忽略指定目录
@@ -399,7 +399,7 @@ class SyncFileTask {
         //---------------------------------------------这部分有待优化------------------------------------------
         Task AllProjectZipToAssets2 = project.tasks.create('AllProjectZipToAssets2', Zip) {
             def resProjectPath = project.rootDir.path + File.separator + 'AllProject' + File.separator + projectName
-            def targetPath = System.getProperty("user.dir") + File.separator + 'src' + File.separator + 'main' + File.separator + 'assets'
+            def targetPath = project.projectDir.path + File.separator + 'src' + File.separator + 'main' + File.separator + 'assets'
 
             from resProjectPath
             exclude('_ProjectOtherFile', 'Data', '归档文件_*')//忽略指定目录
