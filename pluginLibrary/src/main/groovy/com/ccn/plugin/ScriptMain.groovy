@@ -52,20 +52,20 @@ class ScriptMain implements Plugin<Project> {
                     return
                 }
                 new SyncFileTask(projectName, pdaSDCardDirName, project)
-
-                SyncFileTask.PushXmlToPDA()
-                SyncFileTask.PushDBToPDA()
+                if (mProject.rootProject.name == 'SmartPDA') {
+                    SyncFileTask.S8_PushXmlToPDA()
+                    SyncFileTask.S8_RemovePDAFile()
+                    SyncFileTask.S8_Rename_XML_ZIP(s8_ZipXmlFileName)
+                } else {
+                    SyncFileTask.PushXmlToPDA()
+                    SyncFileTask.PushDBToPDA()
+                    SyncFileTask.AllProjectZipToAssets()
+                    SyncFileTask.AllProjectBuildFileToTFS()
+                }
                 SyncFileTask.PullToDeskTop_DB()
                 SyncFileTask.PullToDeskTop_Log()
-
-                SyncFileTask.AllProjectZipToAssets()
-                SyncFileTask.AllProjectBuildFileToTFS()
-
-                SyncFileTask.S8_PushXmlToPDA()
-                SyncFileTask.S8_RemovePDAFile()
-                SyncFileTask.S8_Rename_XML_ZIP(s8_ZipXmlFileName)
-
                 SyncFileTask.X_uninstallApkDeleteDir()
+                //SyncFileTask.X_installReleaseApk()
                 SyncFileTask.ADBWiFiConnect()
                 SyncFileTask.ADBWiFiDisConnect()
             }
