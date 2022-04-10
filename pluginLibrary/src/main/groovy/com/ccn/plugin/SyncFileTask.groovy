@@ -7,22 +7,23 @@ import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Zip
 
 class SyncFileTask {
-
     public static def groupName = "PDA"
     static def PDASDCardPath = ' /sdcard/防伪追溯/'
 
     static def rootProjectPath
-    static def projectName
-    static def project
+    static def projectName  //AllProject下的项目名称
+    static def project      //Project对象
+    static def pdaDirName   //PDA中目录名称(eg：防伪追溯 或其他)
 
-    SyncFileTask(proName, pdaDirName, Project mProject) {
-        rootProjectPath = mProject.rootDir.path + File.separator + 'AllProject' + File.separator + proName + File.separator
-        println '--------------------------------->' + rootProjectPath
-        projectName = proName
+    SyncFileTask(projectName, pdaDirName, Project project) {
+        rootProjectPath = project.rootDir.path + File.separator + 'AllProject' + File.separator + projectName + File.separator
+        println 'ROOT-----------------------> ' + rootProjectPath
+        this.projectName = projectName
+        this.pdaDirName = pdaDirName
+        this.project = project
         if (pdaDirName != null) {
             PDASDCardPath = ' /sdcard/' + pdaDirName + '/'
         }
-        project = mProject
     }
 
     /**
@@ -129,9 +130,9 @@ class SyncFileTask {
             group = groupName
             description = "PULL DB文件到桌面"
             doLast {
-                def dbDirName = projectName + '_Data'  //pull 到 Desktop 的DB文件夹名称
+                def dbDirName = pdaDirName == null || pdaDirName == '' ? projectName + '_Data' : pdaDirName + '_Data'  //pull 到 Desktop 的DB文件夹名称
                 def desktopPath = System.getenv("USERPROFILE") + File.separator + "Desktop" + File.separator + dbDirName
-                def PDADBPath = '/sdcard/防伪追溯/Data '
+                def PDADBPath = pdaDirName == null || pdaDirName == '' ? '/sdcard/防伪追溯/Data ' : '/sdcard/' + pdaDirName + '/Data '
                 def fileDir = project.file(desktopPath)
                 if (fileDir.exists()) {
                     fileDir.deleteDir() //delete dir
@@ -158,9 +159,9 @@ class SyncFileTask {
             group = groupName
             description = "PULL Log文件到桌面"
             doLast {
-                def dbDirName = projectName + '_Log'  //pull 到 Desktop 的Log文件夹名称
+                def dbDirName = pdaDirName == null || pdaDirName == '' ? projectName + '_Log' : pdaDirName + '_Log' //pull 到 Desktop 的Log文件夹名称
                 def desktopPath = System.getenv("USERPROFILE") + File.separator + "Desktop" + File.separator + dbDirName
-                def PDALogPath = '/sdcard/防伪追溯/Log '
+                def PDALogPath = pdaDirName == null || pdaDirName == '' ? '/sdcard/防伪追溯/Log ' : '/sdcard/' + pdaDirName + '/Log '
                 def fileDir = project.file(desktopPath)
                 if (fileDir.exists()) {
                     fileDir.deleteDir() //delete dir
@@ -689,16 +690,7 @@ class SyncFileTask {
                 process.in.eachLine { processing ->
                     println processing
                 }
-
             }
         }
     }
-
-
 }
-
-
-
-
-
-
