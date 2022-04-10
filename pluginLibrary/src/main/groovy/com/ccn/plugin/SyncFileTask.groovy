@@ -398,7 +398,7 @@ class SyncFileTask {
     //clean --> assembleRelease  --> deleteExistedTFSFile   --> AllProjectBuildFileToTFS
     static def AllProjectBuildFileToTFS() {
         //---------------------------------------------这部分有待优化------------------------------------------
-        Task AllProjectZipToAssets2 = project.tasks.create('AllProjectZipToAssets2', Zip) {
+        Task ZipToAssets = project.tasks.create('ZipToAssets', Zip) {
             def resProjectPath = project.rootDir.path + File.separator + 'AllProject' + File.separator + projectName
             def targetPath = project.projectDir.path + File.separator + 'src' + File.separator + 'main' + File.separator + 'assets'
 
@@ -467,14 +467,14 @@ class SyncFileTask {
         // -->assembleRelease-->A_AllProjectArchiveToTFS    生成release版本apk并将归档文件提交到指定的TFS目录
 
         /*clean deleteExistedXMLZip2
-        AllProjectZipToAssets2
+        ZipToAssets
         deleteExistedDBZip2 createDBZip2
         assembleRelease
         deleteExistedTFSFile
         AllProjectBuildFileToTFS*/
 
         def localTFSPath = rootProjectPath + '归档文件_v' + project.android.defaultConfig.versionName
-        Task deleteExistedTFSFile = project.task(ScriptTask.deleteExistedTFSFile, type: Delete, dependsOn: AllProjectZipToAssets2) {
+        Task deleteExistedTFSFile = project.task(ScriptTask.deleteExistedTFSFile, type: Delete, dependsOn: ZipToAssets) {
             delete localTFSPath
             //不管是否存在apk，都会去打包
             //dependsOn 'clean'
@@ -484,7 +484,7 @@ class SyncFileTask {
 
         project.task(ScriptTask.AllProjectBuildFileToTFS, type: Copy, dependsOn: deleteExistedTFSFile) {
             group = groupName
-            description = "归档文件打包到AllProject中具体项目下"
+            description = "归档文件打包到AllProject中具体项目下（可拷贝到TFS归档）"
             if (localTFSPath == null) return
             //finalizedBy('commitTFS')
             def configName = 'XML-DB配置文件'
@@ -507,10 +507,10 @@ class SyncFileTask {
                 from assetsZipDataPath  //assets目录下对应的项目数据库zip包
             }
             into(configName + File.separator + projectName) {
-                from project.zipTree(assetsZipPath)
+                if (project.file(assetsZipPath).exists()) from project.zipTree(assetsZipPath)
             }
             into(configName + File.separator + projectName + '_Data') {
-                from project.zipTree(assetsZipDataPath)
+                if (project.file(assetsZipDataPath).exists()) from project.zipTree(assetsZipDataPath)
             }
             //exclude 'CNG.xml' //忽略CNG文件归档（可选）
             //归档时重命名CNG文件（方便维护，灌抢时可直接使用）
